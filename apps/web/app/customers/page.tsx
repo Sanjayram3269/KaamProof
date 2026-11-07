@@ -1,0 +1,1 @@
+import Shell from "@/components/Shell";export default function Customers(){return <Shell><h1 className="text-3xl font-bold">Customers</h1><p className="muted mt-2">Customer history is visible within each job. A consolidated directory is planned for a later release.</p><div className="card p-6 mt-6">Open a job to view its customer and engagement history.</div></Shell>}

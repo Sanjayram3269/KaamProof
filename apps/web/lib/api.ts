@@ -1,0 +1,4 @@
+export const API=process.env.NEXT_PUBLIC_API_URL||"http://localhost:8000";
+export type Job={id:string;title:string;customer_name:string;category:string;status:string;created_at:string};
+export function authHeaders():HeadersInit{const token=typeof window!=="undefined"?localStorage.getItem("kp_token"):null;return token?{Authorization:`Bearer ${token}`}:{}}
+export async function api<T>(path:string,init:RequestInit={}):Promise<T>{const headers=new Headers(init.headers);if(init.body&&!(init.body instanceof FormData))headers.set("Content-Type","application/json");Object.entries(authHeaders()).forEach(([k,v])=>headers.set(k,String(v)));const response=await fetch(`${API}${path}`,{...init,headers,cache:"no-store"});if(!response.ok){let m=`Request failed (${response.status})`;try{m=(await response.json()).detail||m}catch{}throw new Error(m)}return response.json() as Promise<T>}

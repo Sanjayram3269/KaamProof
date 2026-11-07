@@ -1,0 +1,1 @@
+import Shell from "@/components/Shell";export default function Payments(){return <Shell><h1 className="text-3xl font-bold">Payments</h1><p className="muted mt-2">Payment entries are manually recorded per job; KaamProof does not process or verify settlement.</p><div className="card p-6 mt-6">Open a job record to review the agreed amount and payment notes.</div></Shell>}

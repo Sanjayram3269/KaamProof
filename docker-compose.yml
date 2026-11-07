@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kaamproof}
+      POSTGRES_USER: ${POSTGRES_USER:-kaamproof}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-local-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kaamproof} -d ${POSTGRES_DB:-kaamproof}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  api:
+    build: ./apps/api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://kaamproof:change-this-local-password@db:5432/kaamproof}
+      UPLOAD_DIR: /app/storage
+    volumes:
+      - evidence_data:/app/storage
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports: ["3000:3000"]
+    depends_on: [api]
+volumes:
+  postgres_data:
+  evidence_data:
