@@ -19,7 +19,7 @@
 - Added responsive React UI, four-language messages and events, localized dates
   and amounts, accessible forms/tabs, validation, loading/error/empty states,
   confirmations, notifications, preferences, help and not-found handling.
-- Added backend/database, component and Chromium workflows, automated axe checks,
+- Added apps/api/database, component and Chromium workflows, automated axe checks,
   container health checks, CI workflow and deployment/security documentation.
 - Resolved dependency advisories, malformed-PNG handling, body streaming limits,
   activity ordering and the IPv6 healthcheck mismatch found during verification.

@@ -16,9 +16,9 @@ commands, not inferred from test files. See delivery checkpoint for final commit
 | Backend lint | `ruff check app tests migrations`: **All checks passed!** |
 | Frontend lint | `npm run lint`: exit 0 |
 | TypeScript | `npm run typecheck`: exit 0 |
-| Production build | `npm run build`: successful TypeScript + Vite build |
+| Production build | `npm run build`: successful TypeScript + Next.js build |
 | Database migration | Clean SQLite and PostgreSQL upgrades; second upgrade is a no-op; `alembic check`: **No new upgrade operations detected.** |
-| Python dependency scan | `pip-audit -r backend/requirements.txt`: **No known vulnerabilities found** after package updates |
+| Python dependency scan | `pip-audit -r apps/api/requirements.txt`: **No known vulnerabilities found** after package updates |
 | npm dependency scan | `npm audit`: **found 0 vulnerabilities**, including development dependencies |
 | Dependency consistency | `python -m pip check`: **No broken requirements found.** |
 | Docker build/start | Both images built; PostgreSQL, API and frontend health checks passed; mail worker running |

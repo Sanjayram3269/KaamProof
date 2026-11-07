@@ -1,15 +1,21 @@
 # Architecture
 
-The baseline was empty. This implementation uses React 19, TypeScript, Vite,
-React Router, i18next and Lucide on the frontend; FastAPI, Pydantic 2,
+Main was a bootstrap; an unmerged MVP used Next.js and FastAPI. The final
+implementation retains that framework and apps/api + apps/web structure, using
+React 19, TypeScript, Next.js 16.4.5 App Router, i18next and Lucide; FastAPI, Pydantic 2,
 SQLAlchemy 2 and Alembic on the backend. PostgreSQL 17 is the container database;
 SQLite on a private local disk supports development and isolated tests.
 
-Nginx serves the production SPA and proxies `/api/v1` to the backend on one origin.
+Nginx proxies the Next.js Node server and `/api/v1` backend on one origin.
 Only port 8080 is published by Compose. A production TLS terminator sits in front
 of Nginx. Worker browser credentials use opaque, random, hashed server-side
 sessions in HttpOnly cookies, with rotating refresh credentials and session-bound
 CSRF tokens. There is no JWT parser or signing key to configure.
+
+Next.js uses actual App Router pages and layouts, with a per-request script nonce
+and dynamic rendering. The previous Vite iteration was replaced during MVP
+reconciliation. A small navigation adapter shares accessible components with the
+test harness; production routing uses next/link and next/navigation.
 
 `app/auth.py` handles account/session routes. `app/jobs.py` handles worker routes;
 `app/portal.py` handles customer capabilities. `services.py` centralizes ownership,

@@ -45,7 +45,7 @@ evidence is preserved; deletion is allowed in draft or through account deletion.
 
 ## Verify
 
-Backend, from `backend/` after installing `requirements.txt` into a virtualenv:
+Backend, from `apps/api/` after installing `requirements.txt` into a virtualenv:
 
 ```text
 python -m alembic upgrade head
@@ -54,7 +54,7 @@ python -m pytest -q
 ruff check app tests migrations
 ```
 
-Frontend, from `frontend/`:
+Frontend, from `apps/web/`:
 
 ```text
 npm ci
@@ -67,7 +67,7 @@ npm run test:e2e
 npm audit
 ```
 
-The default browser tests require the native API on port 8000 and launch Vite on
+The default browser tests require the native API on port 8000 and launch Next.js on
 localhost:5173. For the Docker stack, set E2E_BASE_URL=http://localhost:8080 instead.
 Backend tests migrate an isolated on-disk SQLite database; TEST_DATABASE_URL can
 select an empty, disposable PostgreSQL database. Tests erase that database's
@@ -79,6 +79,9 @@ runs Chromium against Nginx.
 - [Implementation audit](docs/IMPLEMENTATION_AUDIT.md)
 - [Product requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture and state machine](docs/ARCHITECTURE.md)
+- [API contract](docs/API.md)
+- [Data model](docs/DATA_MODEL.md)
+- [Existing MVP reconciliation and safe import](docs/MVP_RECONCILIATION.md)
 - [Execution roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [Executed test report](docs/TEST_REPORT.md)
 - [Security audit and limitations](docs/SECURITY_AUDIT.md)

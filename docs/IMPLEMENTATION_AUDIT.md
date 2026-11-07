@@ -1,9 +1,14 @@
 # Implementation audit
 
 Baseline: 2026-11-07, commit 4175835, branch main, clean working tree.
-The entire repository contains README.md (four lines) and Git metadata. The README
+The checked-out main tree contains README.md (four lines) and Git metadata. The README
 describes an initial bootstrap. No architecture, requirements, API, database,
 deployment, application, migrations, configuration, CI or tests exist.
+
+This initial classification applies to main only. Final remote-branch inspection
+also found the unmerged MVP at 0b3b8a9. See MVP_RECONCILIATION.md for its complete
+file review, executed five-test baseline, feature classification and preservation.
+The final implementation retains its Next.js/FastAPI frameworks and monorepo paths.
 
 | Feature at baseline | Classification | Evidence |
 | --- | --- | --- |

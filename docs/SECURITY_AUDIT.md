@@ -11,7 +11,7 @@ engineering review, not an independent penetration test or legal certification.
 | Passwords | Argon2id via pwdlib, 10–128 characters, dummy verification for unknown accounts; stored hash assertion and invalid-login tests |
 | Browser sessions | Random opaque credentials, SHA-256 digests in DB, HttpOnly/SameSite=Strict cookies, Secure in production, 8-hour access, 14-day refresh; expiry/logout/revocation/rotation/replay tests |
 | JWT | Not used; authorization uses server-side opaque sessions, so JWT algorithm/issuer bypass is not applicable |
-| CSRF and CORS | Session-bound CSRF header on worker mutations, exact origin validation on all mutations, same-origin frontend/API, no permissive CORS; hostile-origin and forged-CSRF tests |
+| CSRF and CORS | Session-bound CSRF header on worker mutations, exact origin validation on all mutations, same-origin apps/web/API, no permissive CORS; hostile-origin and forged-CSRF tests |
 | IDOR / ownership | Worker ownership checked on jobs and customer association; evidence/documents require parent ownership; cross-user read/write and PDF/image denial tests |
 | Customer links | 256-bit random capabilities, digests only in share_links, expiry/revocation, capability headers rather than URL paths, fragment removed from address bar, no-referrer; invalid/expired/revoked/stale/replay tests |
 | Decisions | Job revision locking, agreement version binding, one decision, completion submission binding; simultaneous approval test gives one 200 and one 409 |

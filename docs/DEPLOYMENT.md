@@ -22,6 +22,9 @@ records are seeded. PostgreSQL and private evidence persist in named volumes.
 volumes unless you intend to destroy the stored records.
 
 Backend startup runs `alembic upgrade head` before serving. Failure stops startup.
+For an existing MVP deployment, follow MVP_RECONCILIATION.md: use a separate empty
+target and the dry-run import tool. Do not run the new migration history in-place
+against the MVP database.
 Health checks test PostgreSQL readiness and a proxied API database query. The mail
 worker runs once a minute; errors appear in `docker compose logs mail`.
 
@@ -31,23 +34,23 @@ Requirements: Python 3.12, Node 22.12 or newer, npm. PowerShell, repository root
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python -m pip install -r backend/requirements.txt
-Set-Location backend
-..\.venv\Scripts\python -m alembic upgrade head
-..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python -m pip install -r apps/api/requirements.txt
+Set-Location apps/api
+..\..\.venv\Scripts\python -m alembic upgrade head
+..\..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 In a second PowerShell terminal, repository root:
 
 ```powershell
-Set-Location frontend
+Set-Location apps/web
 npm ci
-npm run dev -- --host localhost
+npm run dev
 ```
 
-Open http://localhost:5173 (use this exact hostname). Vite proxies `/api` to port
+Open http://localhost:5173 (use this exact hostname). Next.js proxies `/api` to port
 8000; no cross-origin API configuration is necessary. Native development defaults
-to `backend/data/kaamproof.db` and private `backend/data/evidence`.
+to `apps/api/data/kaamproof.db` and private `apps/api/data/evidence`.
 Native Python reads environment variables, not `.env` automatically. Compose
 reads the root `.env`; set `$env:NAME='value'` before native commands when overriding.
 
@@ -102,12 +105,12 @@ capacity and database backups. Add a managed ingress/WAF for Internet-scale abus
 ## Verification commands
 
 ```powershell
-Set-Location backend
-..\.venv\Scripts\python -m pytest -q
-..\.venv\Scripts\ruff check app tests migrations
-..\.venv\Scripts\python -m alembic upgrade head
-..\.venv\Scripts\python -m alembic check
-Set-Location ../frontend
+Set-Location apps/api
+..\..\.venv\Scripts\python -m pytest -q
+..\..\.venv\Scripts\ruff check app tests migrations
+..\..\.venv\Scripts\python -m alembic upgrade head
+..\..\.venv\Scripts\python -m alembic check
+Set-Location ../web
 npm run lint
 npm run typecheck
 npm test
