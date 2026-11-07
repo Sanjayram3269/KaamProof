@@ -1,0 +1,193 @@
+"""Initial KaamProof schema."""
+
+from alembic import op
+import sqlalchemy as sa
+
+revision = "0001_initial"
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    op.create_table(
+        "users",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column("name", sa.String(120), nullable=False),
+        sa.Column("email", sa.String(255), nullable=False, unique=True, index=True),
+        sa.Column("phone", sa.String(32)),
+        sa.Column("password_hash", sa.String(255), nullable=False),
+        sa.Column("language", sa.String(8), nullable=False, server_default="en"),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "jobs",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "worker_id",
+            sa.String(36),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("customer_name", sa.String(120), nullable=False),
+        sa.Column("customer_phone", sa.String(32)),
+        sa.Column("title", sa.String(180), nullable=False),
+        sa.Column("description", sa.Text(), nullable=False),
+        sa.Column("category", sa.String(80), nullable=False),
+        sa.Column("location_label", sa.String(180)),
+        sa.Column("status", sa.String(40), nullable=False, server_default="draft", index=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "agreements",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("version", sa.Integer(), nullable=False),
+        sa.Column("scope", sa.Text(), nullable=False),
+        sa.Column("exclusions", sa.Text()),
+        sa.Column("labour_amount", sa.Numeric(12, 2), nullable=False),
+        sa.Column("materials_amount", sa.Numeric(12, 2), nullable=False),
+        sa.Column("total_amount", sa.Numeric(12, 2), nullable=False),
+        sa.Column("currency", sa.String(3), nullable=False, server_default="INR"),
+        sa.Column("valid_until", sa.DateTime(timezone=True)),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.UniqueConstraint("job_id", "version", name="uq_agreement_job_version"),
+    )
+    op.create_table(
+        "customer_links",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("token_hash", sa.String(64), nullable=False, unique=True),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("revoked_at", sa.DateTime(timezone=True)),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "approvals",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("agreement_id", sa.String(36), sa.ForeignKey("agreements.id"), nullable=False),
+        sa.Column("decision", sa.String(20), nullable=False),
+        sa.Column("note", sa.Text()),
+        sa.Column(
+            "decided_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "job_events",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("actor_type", sa.String(20), nullable=False),
+        sa.Column("actor_id", sa.String(36)),
+        sa.Column("event_type", sa.String(60), nullable=False),
+        sa.Column("message", sa.Text(), nullable=False),
+        sa.Column("metadata_json", sa.Text()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "evidence",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("uploader_id", sa.String(36), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("storage_key", sa.String(500), nullable=False),
+        sa.Column("original_name", sa.String(255), nullable=False),
+        sa.Column("content_type", sa.String(100), nullable=False),
+        sa.Column("size_bytes", sa.Integer(), nullable=False),
+        sa.Column("caption", sa.String(500)),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "completion_decisions",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("decision", sa.String(20), nullable=False),
+        sa.Column("note", sa.Text()),
+        sa.Column(
+            "decided_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+    op.create_table(
+        "payment_entries",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column(
+            "job_id",
+            sa.String(36),
+            sa.ForeignKey("jobs.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column("amount", sa.Numeric(12, 2), nullable=False),
+        sa.Column("method", sa.String(40)),
+        sa.Column("reference", sa.String(120)),
+        sa.Column("note", sa.String(500)),
+        sa.Column(
+            "recorded_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    )
+
+
+def downgrade():
+    for name in [
+        "payment_entries",
+        "completion_decisions",
+        "evidence",
+        "job_events",
+        "approvals",
+        "customer_links",
+        "agreements",
+        "jobs",
+        "users",
+    ]:
+        op.drop_table(name)
