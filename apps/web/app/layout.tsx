@@ -1,0 +1,1 @@
+import type {Metadata} from "next";import "./globals.css";export const metadata:Metadata={title:"KaamProof — Your Work. Your Proof.",description:"Worker-owned work agreements, evidence and customer acknowledgements."};export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
