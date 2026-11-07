@@ -24,11 +24,11 @@ import {
 } from "./navigation";
 import { Auth } from "./state";
 import { api, post } from "./api";
-import { Action, Brand, Language } from "./ui";
+import { Action, Brand, Language, Loading } from "./ui";
 import "./experience-i18n";
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { user, setUser } = useContext(Auth),
+  const { user, setUser, ready } = useContext(Auth),
     { t } = useTranslation(),
     navigate = useNavigate(),
     { pathname } = useLocation();
@@ -115,6 +115,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", refresh);
     };
   }, [user?.id, pathname]);
+  if (!ready)
+    return (
+      <main className="session-loading" id="main-content" tabIndex={-1}>
+        <Loading />
+      </main>
+    );
   if (!user) return <Navigate to="/login" replace />;
   const work = [
     ["", "dashboard", LayoutDashboard],
@@ -308,7 +314,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
-        <main className="content">{children}</main>
+        <main className="content" id="main-content" tabIndex={-1}>
+          {children}
+        </main>
         <footer>{t("disclaimer")}</footer>
       </div>
     </div>

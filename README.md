@@ -22,6 +22,22 @@ with responsive navigation and English/Hindi/Tamil/Kannada controls.
 All figures derive from owned records. See [dashboard semantics](docs/ARCHITECTURE.md#dashboard-read-model)
 and the [redesign execution plan](docs/REDESIGN_PLAN.md).
 
+## Public website and readability
+
+The public homepage explains the product through licensed worker photography,
+feature and profession guides, a five-step workflow, six labelled product previews,
+customer sharing, transparency and accessible FAQs. Sign-in and registration stay
+on their existing routes. Public content renders without a session or JavaScript.
+The app uses larger role-based typography, with reflowed KPIs, tables and controls.
+All four interface languages include the public experience.
+
+[Photography sources](docs/PHOTOGRAPHY.md) document the locally optimized assets.
+Set SITE_URL to the actual public origin to enable canonical URLs, the public
+sitemap and indexing. Local/private installations leave it unset and disallow
+indexing. Account and customer-capability pages remain noindex. The public site
+includes Open Graph metadata and a generated share image. Privacy/terms documents
+have not been supplied; the footer does not link to fictional legal policies.
+
 ## Start locally
 
 Install Docker Desktop with Linux containers. In PowerShell at the repository root:

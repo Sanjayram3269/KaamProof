@@ -1,13 +1,16 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, X } from "lucide-react";
 import { api } from "./api";
 import i18n from "./i18n";
 import "./events";
 import "./experience-i18n";
+import "./marketing-i18n";
 import { Auth, Toast } from "./state";
-import { Loading, ErrorBoundary } from "./ui";
+import { ErrorBoundary } from "./ui";
 function App({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [user, setUser] = useState<any>(null),
     [ready, setReady] = useState(false),
     [toast, setToast] = useState("");
@@ -29,23 +32,19 @@ function App({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => setToast(""), 4500);
     return () => clearTimeout(timer);
   }, [toast]);
-  if (!ready) return <Loading />;
   return (
-    <Auth.Provider value={{ user, setUser }}>
+    <Auth.Provider value={{ user, setUser, ready }}>
       <Toast.Provider value={setToast}>
         <>
           <a href="#main-content" className="skip-link">
-            {i18n.t("dashboard")}
+            {t("pub.skip")}
           </a>
-          <div id="main-content">{children}</div>
+          <div className="page-root">{children}</div>
           {toast && (
             <div className="toast" role="status">
               <Check size={18} />
               {toast}
-              <button
-                aria-label={i18n.t("cancel")}
-                onClick={() => setToast("")}
-              >
+              <button aria-label={t("cancel")} onClick={() => setToast("")}>
                 <X size={15} />
               </button>
             </div>

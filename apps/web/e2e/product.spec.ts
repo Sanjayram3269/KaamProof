@@ -85,6 +85,10 @@ test("worker and customer complete a real documented job", async ({
       targets: v.nodes.map((n) => n.target),
     })),
   ).toEqual([]);
+  await customer.screenshot({
+    path: "test-results/customer-portal-readable.png",
+    fullPage: true,
+  });
   await customer.getByRole("button", { name: "Save changes" }).click();
   await expect(
     customer.getByText("Approved", { exact: true }).first(),
@@ -133,6 +137,29 @@ test("worker and customer complete a real documented job", async ({
   await page.getByRole("link", { name: "Full job record" }).click();
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe("kaamproof-record.pdf");
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "test-results/readable-job-" + width + ".png",
+      fullPage: true,
+    });
+    await customer.setViewportSize({ width, height: 1000 });
+    expect(
+      await customer.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await customer.screenshot({
+      path: "test-results/readable-customer-" + width + ".png",
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const otherContext = await browser.newContext();
   const other = await otherContext.newPage();
   await other.goto("/register");
@@ -167,11 +194,13 @@ test("mobile navigation, language, validation and missing routes", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByLabel("Language").selectOption("ta");
+  await page.locator(".public-header").getByRole("button").click();
+  await page.getByRole("combobox", { name: "Language" }).selectOption("ta");
   await expect(page.locator("html")).toHaveAttribute("lang", "ta");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "ta");
-  await page.locator("select").selectOption("en");
+  await page.locator(".public-header").getByRole("button").click();
+  await page.getByRole("combobox").selectOption("en");
   await page.goto("/register");
   await page.getByRole("button", { name: "Create account" }).click();
   expect(

@@ -114,3 +114,37 @@ The Docker gateway resolves service names through Docker DNS with a ten-second
 cache, so container replacement does not leave a stale upstream address. Its
 health check covers both the frontend and API. See the official [NGINX proxy
 variable documentation](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass).
+
+## Public website and rendering boundary
+
+The root route is a complete four-language public website. Its content is rendered
+on the server even without JavaScript or a working API session check. Providers
+exposes a session-ready flag; the authenticated Shell and account forms wait for
+that flag before displaying owned content, accepting account actions or redirecting
+to /login. This prevents a late session lookup from overwriting a new login. Existing authentication
+forms and their successful /app redirect remain unchanged. Anonymous API clients
+without a CSRF cookie do not attempt refresh, since refresh requires that cookie.
+Authenticated refresh, CSRF headers and single-flight retry behavior are retained
+and covered by API client tests. Public previews contain only labelled examples.
+
+The public page uses native details/summary FAQs, responsive navigation, keyboard
+product tabs, semantic sections and local Next Image photography. The hero image
+is preloaded; other photographs load lazily with explicit dimensions and sizes.
+Sources and licenses appear in PHOTOGRAPHY.md and /photo-credits. The standalone
+frontend container explicitly includes public/. No private evidence is used for
+marketing assets. A generated /share-image PNG supplies Open Graph/Twitter cards.
+
+SITE_URL optionally configures the actual public origin. Canonical URLs and the
+public sitemap are omitted until it is configured. Unconfigured local/private
+installations disallow indexing; configured installations index the public home
+and photo credits only. Authenticated, account-recovery and capability pages are
+noindex. No host header is trusted to construct canonical links. Privacy/terms
+documents were not supplied, so no fictional legal pages are linked.
+
+Typography is separated into a role-based readability stylesheet: body 16px, form
+labels 15px, input text 16px, card headings 20px, page headings 32–38px, operational
+metadata generally 13px and KPI values 32–38px. Cards, tables, controls, navigation
+and customer views reflow for larger type; narrow financial KPIs use full rows.
+The public site has its own scoped editorial scale, with larger hero/section
+headings and compact, explicitly illustrative product previews. Tamil navigation
+uses a compact menu where its longer labels would crowd the desktop bar.

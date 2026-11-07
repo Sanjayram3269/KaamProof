@@ -26,10 +26,10 @@ describe("accessible interface", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Good work deserves a clear record.",
+      "Your work deserves more than a handshake.",
     );
     expect(
-      screen.getByRole("link", { name: "Start documenting your work" }),
+      screen.getByRole("link", { name: "Start building your work record" }),
     ).toHaveAttribute("href", "/register");
   });
   it("labels required inputs and enforces minimum password length", () => {
@@ -124,5 +124,39 @@ describe("API client", () => {
       new Response('{"error":{"message":"Forbidden"}}', { status: 403 }),
     );
     await expect(api("/jobs")).rejects.toEqual(new ApiError(403, "Forbidden"));
+  });
+  it("does not attempt an impossible refresh for anonymous visitors without a CSRF cookie", async () => {
+    document.cookie = "kp_csrf=; Max-Age=0";
+    const fetcher = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response('{"error":{"message":"Please sign in"}}', { status: 401 }),
+      );
+    await expect(api("/auth/me")).rejects.toEqual(
+      new ApiError(401, "Please sign in"),
+    );
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+  it("retains authenticated refresh and retries when the CSRF cookie exists", async () => {
+    document.cookie = "kp_csrf=session-csrf";
+    const fetcher = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response('{"error":{"message":"Expired session"}}', {
+          status: 401,
+        }),
+      )
+      .mockResolvedValueOnce(new Response('{"refreshed":true}'))
+      .mockResolvedValueOnce(new Response('{"id":"owned-job"}'));
+    expect(await api("/jobs/owned-job")).toEqual({ id: "owned-job" });
+    expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
+      "/api/v1/jobs/owned-job",
+      "/api/v1/auth/refresh",
+      "/api/v1/jobs/owned-job",
+    ]);
+    expect(
+      new Headers(fetcher.mock.calls[1][1]!.headers).get("X-CSRF-Token"),
+    ).toBe("session-csrf");
+    document.cookie = "kp_csrf=; Max-Age=0";
   });
 });

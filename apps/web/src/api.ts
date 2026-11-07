@@ -35,6 +35,7 @@ export async function api(
     response.status === 401 &&
     !token &&
     retry &&
+    Boolean(csrfToken()) &&
     (!path.startsWith("/auth/") || path === "/auth/me")
   ) {
     if (!refreshFlight)

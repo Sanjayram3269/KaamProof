@@ -3,8 +3,13 @@ import { createContext, useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import i18n from "./i18n";
 
-export const Auth = createContext<{ user: any; setUser: (u: any) => void }>({
+export const Auth = createContext<{
+  user: any;
+  ready: boolean;
+  setUser: (u: any) => void;
+}>({
   user: null,
+  ready: false,
   setUser: () => {},
 });
 

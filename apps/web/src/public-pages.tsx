@@ -2,13 +2,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "./navigation";
 import { useTranslation } from "react-i18next";
-import {
-  ArrowRight,
-  Check,
-  ClipboardCheck,
-  FileText,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { post } from "./api";
 import i18n from "./i18n";
 import { Auth, useLoad, text, object } from "./state";
@@ -28,65 +22,7 @@ import {
 } from "./ui";
 import { AgreementView } from "./worker-pages";
 
-export function Landing() {
-  const { t } = useTranslation();
-  return (
-    <div className="landing">
-      <header>
-        <Brand />
-        <div className="inline">
-          <Language />
-          <Link to="/login">{t("login")}</Link>
-          <Link className="button" to="/register">
-            {t("register")} <ArrowRight size={16} />
-          </Link>
-        </div>
-      </header>
-      <main className="hero">
-        <div>
-          <p className="eyebrow">
-            <span className="live-dot" /> {t("tagline")}
-          </p>
-          <h1>{t("hero")}</h1>
-          <p className="hero-copy">{t("heroText")}</p>
-          <Link className="button" to="/register">
-            {t("getStarted")} <ArrowRight size={18} />
-          </Link>
-          <p className="hero-note">
-            <ShieldCheck size={17} /> {t("disclaimer")}
-          </p>
-        </div>
-        <div className="hero-art">
-          <div className="paper">
-            <div className="paper-top">
-              <ClipboardCheck size={28} />
-              <span>KAAMPROOF</span>
-              <span className="paper-mark">
-                <Check />
-              </span>
-            </div>
-            <h2>{t("tagline")}</h2>
-            <div className="paper-line" />
-            <div className="paper-line short" />
-            <div className="paper-divider" />
-            {["agreement", "evidence", "completion"].map((key, n) => (
-              <div className="proof-step" key={key}>
-                <span>0{n + 1}</span>
-                <strong>{t(key)}</strong>
-                <Check size={18} />
-              </div>
-            ))}
-            <p>{t("disclaimer")}</p>
-          </div>
-          <div className="floating-note">
-            <FileText size={20} /> {t("tagline")}
-          </div>
-        </div>
-      </main>
-      <footer>{t("disclaimer")}</footer>
-    </div>
-  );
-}
+export { Landing } from "./landing";
 
 export function AuthPage({
   mode,
@@ -94,7 +30,7 @@ export function AuthPage({
   mode: "login" | "register" | "forgot" | "reset" | "verify";
 }) {
   const { t } = useTranslation(),
-    { setUser } = useContext(Auth),
+    { setUser, ready } = useContext(Auth),
     navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [token] = useState(() =>
@@ -103,22 +39,33 @@ export function AuthPage({
   useEffect(() => {
     if (token) history.replaceState(null, "", location.pathname);
   }, [token]);
+  // Keep account actions behind the initial session check; public storytelling is independent.
+  if (!ready)
+    return (
+      <main className="session-loading" id="main-content" tabIndex={-1}>
+        <Loading />
+      </main>
+    );
   return (
     <div className="auth-page">
-      <div className="auth-story">
+      <aside className="auth-story">
         <Brand />
         <div>
           <p className="eyebrow">{t("tagline")}</p>
-          <h1>{t("hero")}</h1>
+          <h2>{t("hero")}</h2>
           <p>{t("heroText")}</p>
         </div>
         <small>{t("disclaimer")}</small>
-      </div>
-      <main className="auth-main">
+      </aside>
+      <main className="auth-main" id="main-content" tabIndex={-1}>
         <div className="auth-language">
           <Language />
         </div>
         <div className="auth-box">
+          <Link className="auth-home" to="/">
+            <ArrowLeft size={16} />
+            {t("pub.backHome")}
+          </Link>
           <h1>
             {t(
               {
@@ -236,7 +183,7 @@ export function Portal() {
         <Brand />
         <Language />
       </header>
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Heading title="portal" />
         {error ? (
           <LoadError error={error} retry={reload} />
@@ -339,11 +286,11 @@ export function Portal() {
 export function NotFound() {
   const { t } = useTranslation();
   return (
-    <div className="empty">
+    <main className="empty" id="main-content" tabIndex={-1}>
       <h1>404</h1>
       <h2>{t("notFound")}</h2>
       <Link to="/app">{t("goHome")}</Link>
-    </div>
+    </main>
   );
 }
 

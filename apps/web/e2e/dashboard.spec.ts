@@ -172,6 +172,26 @@ test("business dashboard uses real records, filters, drilldowns and responsive n
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       )
       .toBe(true);
+    for (const [selector, min] of [
+      [".kpi-label", 14],
+      ['[data-testid="kpi-total"]', 32],
+      [".section-head h2", 19],
+      [".finance-caption", 13],
+      [".work-table-job strong", 15],
+    ] as const) {
+      expect(
+        await page
+          .locator(selector)
+          .first()
+          .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+      ).toBeGreaterThanOrEqual(min);
+    }
+    for (const name of ["kpi-collected", "kpi-outstanding"])
+      expect(
+        await page
+          .getByTestId(name)
+          .evaluate((el) => el.scrollWidth <= el.clientWidth),
+      ).toBe(true);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
