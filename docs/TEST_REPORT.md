@@ -8,11 +8,11 @@ commands, not inferred from test files. See delivery checkpoint for final commit
 
 | Gate | Executed result |
 | --- | --- |
-| SQLite backend | `python -m pytest -q --tb=short`: **34 passed**, 1 dependency deprecation warning, 10.92s |
-| PostgreSQL backend | Final source suite in Linux container against disposable PostgreSQL 17 database: **34 passed**, 1 warning, 11.99s |
+| SQLite backend | `python -m pytest -q --tb=short`: **36 passed**, 1 dependency deprecation warning, 12.87s |
+| PostgreSQL backend | Final source suite in Linux container against disposable PostgreSQL 17 database: **36 passed**, 1 warning, 13.89s |
 | Frontend unit/component | `npm test`: **11 passed**, 1 test file |
-| Native browser workflow | `npm run test:e2e`: **4 passed**, 18.2s; an earlier native run preceded the additional mobile-menu assertion |
-| Container browser workflow | Final `E2E_BASE_URL=http://localhost:8080 npm run test:e2e`: **4 passed**, 15.3s, including desktop/job axe checks and the mobile-menu assertion |
+| Native browser workflow | `npm run test:e2e`: **4 passed**, 25.9s against the final native Next.js application |
+| Container browser workflow | Final `E2E_BASE_URL=http://localhost:8080 npm run test:e2e`: **4 passed**, 14.9s, including desktop/job axe checks and the mobile-menu assertion |
 | Backend lint | `ruff check app tests migrations`: **All checks passed!** |
 | Frontend lint | `npm run lint`: exit 0 |
 | TypeScript | `npm run typecheck`: exit 0 |
@@ -21,7 +21,7 @@ commands, not inferred from test files. See delivery checkpoint for final commit
 | Python dependency scan | `pip-audit -r apps/api/requirements.txt`: **No known vulnerabilities found** after package updates |
 | npm dependency scan | `npm audit`: **found 0 vulnerabilities**, including development dependencies |
 | Dependency consistency | `python -m pip check`: **No broken requirements found.** |
-| Docker build/start | Both images built; PostgreSQL, API and frontend health checks passed; mail worker running |
+| Docker build/start | API/mail and Next.js images built; PostgreSQL, API, Next.js and gateway healthy; mail worker running |
 | PDF visual QA | Three-page mixed English/Hindi/Tamil/Kannada job record rendered using Poppler; every page visually inspected for layout and glyph rendering |
 | Responsive visual QA | Actual desktop dashboard and 390px mobile dashboard screenshots inspected; no initial horizontal overflow |
 
@@ -49,7 +49,10 @@ NaN/negative/excess-precision/overpayment, idempotency/reference duplicates,
 financial revision invariants, database FK/check constraints, dashboard counts,
 notification read state, portal privacy, all six document types, password reset,
 verification, language preference, account cascade/deletion queue and local-file
-cleanup, authentication rate limiting and local email preview delivery labeling.
+cleanup, authentication rate limiting and local email preview delivery labeling. Two further
+tests construct a source using the actual original MVP migration, verify dry-run
+rollback and complete record/evidence transfer, legacy bcrypt upgrade, old-link
+retirement, repeat refusal and unsafe-path rollback.
 
 Frontend tests verify landing/navigation, required and minimum-length fields,
 asynchronous form errors, empty/not-found/error/retry states, escaped activity text,
@@ -83,9 +86,10 @@ login/register/reset-request, dashboard and initial job-detail surfaces for WCAG
 ## Implemented but not externally verified
 
 SMTP STARTTLS adapter/retry outbox; private S3 object adapter and encryption options;
-production Secure cookies/configuration guard; GitHub Actions workflow definition.
+production Secure cookies/configuration guard. GitHub Actions has now succeeded
+for all three jobs on application commit 375073a (see final checkpoint).
 Local transports and local/contained application behavior are verified. There was
-no configured external SMTP/S3 account, public TLS deployment or hosted CI run yet.
+no configured external SMTP/S3 account, public TLS deployment. Hosted CI status is recorded separately below.
 
 ## Blocked by external configuration
 
@@ -103,9 +107,11 @@ copy/search extraction of shaped Indic ligatures depends on the PDF reader.
 
 ## Final checkpoint
 
-Final application commits: c8567e0 (frontend) and c1849e9 (transaction/account
-invariants), following backend commit 5735e6d and audit commit 97e0933. Subsequent
-documentation/Compose/CI commits do not alter application behavior.
+Final application commit: 375073a (MVP reconciliation, Next.js App Router, safe
+data import), following the earlier backend/frontend/security commits. See
+MVP_RECONCILIATION.md for the original five passing tests and why the first
+main-only audit was incomplete. All final gate results refer to the reconciled
+Next.js/FastAPI application, not the intermediate Vite iteration.
 
 Final Docker rebuild output ended with:
 
@@ -116,13 +122,15 @@ Image kaamproof-backend Built
 Container kaamproof-db-1 Healthy
 Container kaamproof-backend-1 Healthy
 Container kaamproof-frontend-1 Healthy
-34 passed, 1 warning in 11.99s
-4 passed (15.3s)
+36 passed, 1 warning in 13.89s
+4 passed (14.9s)
 ```
 
 The running mail worker has no independently configured SMTP credentials; its
 container state is running, with database-backed startup inherited from the API
 image. `GET http://localhost:8080/api/v1/health` returned `{"status":"ok"}`.
 PostgreSQL `alembic upgrade head` succeeded again and `alembic check` detected no
-schema drift. `git diff --check` passed. Hosted CI status is separate from these
-local results and is not asserted as passed without observing a successful run.
+schema drift. `git diff --check` passed. Hosted CI was subsequently observed successful for backend, frontend and
+containers-and-browser on application commit 375073a:
+https://github.com/Sanjayram3269/KaamProof/actions/runs/42371498060.
+Final documentation-only commits do not change the verified application code.

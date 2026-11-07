@@ -76,6 +76,7 @@ runs Chromium against Nginx.
 
 ## Documentation
 
+- [Verified delivery report](docs/DELIVERY_REPORT.md)
 - [Implementation audit](docs/IMPLEMENTATION_AUDIT.md)
 - [Product requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture and state machine](docs/ARCHITECTURE.md)

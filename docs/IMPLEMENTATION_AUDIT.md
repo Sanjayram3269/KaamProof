@@ -41,7 +41,7 @@ and IMPLEMENTATION_ROADMAP.md. No feature is verified solely by being present.
 | Four-language interface and responsive design | Complete and verified for automated/visual checks | Translation tests, mobile workflow, screenshots and axe subset |
 | External SMTP/S3 transports | Implemented but unverified against real providers | Credentials not supplied; local adapters verified |
 | Docker, migrations and local startup | Complete and verified | Linux images, healthy Compose stack, SQLite/PostgreSQL migrations |
-| GitHub Actions | Implemented but hosted execution unverified | Workflow definition provided; equivalent commands executed locally |
+| GitHub Actions | Complete and verified | All three hosted jobs succeeded for application commit 375073a |
 | Production deployment/operational readiness | Partially implemented / externally blocked | TLS, providers, backups and target-scale review outstanding |
 
 Security-critical mechanisms are implemented and exercised. Remaining deployment

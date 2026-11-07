@@ -8,7 +8,7 @@ engineering review, not an independent penetration test or legal certification.
 
 | Area | Implemented controls and executed verification |
 | --- | --- |
-| Passwords | Argon2id via pwdlib, 10–128 characters, dummy verification for unknown accounts; stored hash assertion and invalid-login tests |
+| Passwords | Argon2id via pwdlib, 10–128 characters, dummy verification for unknown accounts; imported bcrypt upgraded on login; stored hash assertion and invalid-login tests |
 | Browser sessions | Random opaque credentials, SHA-256 digests in DB, HttpOnly/SameSite=Strict cookies, Secure in production, 8-hour access, 14-day refresh; expiry/logout/revocation/rotation/replay tests |
 | JWT | Not used; authorization uses server-side opaque sessions, so JWT algorithm/issuer bypass is not applicable |
 | CSRF and CORS | Session-bound CSRF header on worker mutations, exact origin validation on all mutations, same-origin apps/web/API, no permissive CORS; hostile-origin and forged-CSRF tests |
@@ -67,6 +67,11 @@ engineering review, not an independent penetration test or legal certification.
   Raster decoding/re-encoding and bounded uploads reduce the supported attack surface.
 - Security properties depend on correct TLS, private storage, database access,
   trusted proxy configuration, updated dependencies and regular monitoring.
+
+The MVP import is dry-run-first, rejects non-empty targets, validates source evidence
+paths, and retires old unbound capabilities without inventing historical agreement
+bindings. It preserves the source snapshot. Legacy passwords exceeding bcrypt
+limitations require reset instead of silent truncation.
 
 No secrets or real external credentials are included. CI credentials are scoped
 only to disposable local test databases. See DEPLOYMENT.md for required variables.

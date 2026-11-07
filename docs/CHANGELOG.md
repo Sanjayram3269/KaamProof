@@ -23,3 +23,8 @@
   container health checks, CI workflow and deployment/security documentation.
 - Resolved dependency advisories, malformed-PNG handling, body streaming limits,
   activity ordering and the IPv6 healthcheck mismatch found during verification.
+
+- Reconciled the unmerged MVP after correcting the initial main-only audit: retained
+  its Next.js/FastAPI frameworks and apps layout, retired localStorage/JWT handling,
+  preserved old worker entry URLs, and added dry-run-first record/evidence import
+  with bcrypt upgrade and ambiguous/unsafe source rejection.

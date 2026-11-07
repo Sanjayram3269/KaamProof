@@ -18,7 +18,15 @@ Docker CLI 29.5.3. Docker daemon initially unavailable (missing
 dockerDesktopLinuxEngine named pipe). No application credentials supplied.
 
 Checkpoint: Docker Desktop started successfully; images build and the stack is
-healthy. 34 backend tests pass on SQLite and PostgreSQL, 11 frontend tests pass,
+healthy. 36 backend tests pass on SQLite and PostgreSQL, 11 frontend tests pass,
 and 4 Chromium tests pass on the native API and Docker/Nginx. Dependency scans
 are clean. Final rerun and delivery metadata go in TEST_REPORT.md. Live SMTP/S3,
 public TLS deployment and hosted CI execution require external configuration.
+
+MVP reconciliation complete: Next.js/FastAPI retained under apps/web and apps/api.
+Original branch remains intact; its 5 baseline tests pass. Safe snapshot import
+adds two tests, for 36 current backend tests. Native Next.js E2E: 4 passed (25.9s);
+Docker Next.js E2E: 4 passed (14.9s). PR #2 is draft and main is unmerged.
+
+Hosted CI run 42371498060 succeeded: backend, frontend, containers-and-browser.
+Final delivery details are in DELIVERY_REPORT.md; PR #2 remains draft and unmerged.
