@@ -1,0 +1,14 @@
+.venv/
+node_modules/
+dist/
+.env
+*.db
+*.db-*
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+data/
+test-results/
+playwright-report/
+coverage/
+*.log
