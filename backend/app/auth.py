@@ -25,10 +25,17 @@ router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 
 
 @router.post("/register", dependencies=[Depends(auth_limit)], status_code=201)
-def register(data: Register, request: Request, response: Response, db=Depends(database)):
+def register(
+    data: Register, request: Request, response: Response, db=Depends(database, scope="function")
+):
     if db.scalar(select(User).where(User.email == data.email)):
         fail(409, "This email is already registered")
-    user = User(email=data.email, password=passwords.hash(data.password), name=data.name)
+    user = User(
+        email=data.email,
+        password=passwords.hash(data.password),
+        name=data.name,
+        language=data.language,
+    )
     db.add(user)
     db.flush()
     issue_session(db, user, request, response)
@@ -36,7 +43,9 @@ def register(data: Register, request: Request, response: Response, db=Depends(da
 
 
 @router.post("/login", dependencies=[Depends(auth_limit)])
-def login(data: Credentials, request: Request, response: Response, db=Depends(database)):
+def login(
+    data: Credentials, request: Request, response: Response, db=Depends(database, scope="function")
+):
     user = db.scalar(select(User).where(User.email == data.email))
     valid = passwords.verify(data.password, user.password if user else DUMMY_PASSWORD)
     if not user or not valid:
@@ -46,12 +55,12 @@ def login(data: Credentials, request: Request, response: Response, db=Depends(da
 
 
 @router.get("/me")
-def me(user=Depends(authenticated)):
+def me(user=Depends(authenticated, scope="function")):
     return public_user(user)
 
 
 @router.post("/refresh", dependencies=[Depends(auth_limit)])
-def refresh(request: Request, response: Response, db=Depends(database)):
+def refresh(request: Request, response: Response, db=Depends(database, scope="function")):
     session = db.scalar(
         select(AuthSession)
         .where(AuthSession.refresh_hash == digest(request.cookies.get("kp_refresh", "")))
@@ -66,21 +75,34 @@ def refresh(request: Request, response: Response, db=Depends(database)):
 
 
 @router.post("/logout")
-def logout(response: Response, request: Request, user=Depends(authenticated), db=Depends(database)):
+def logout(
+    response: Response,
+    request: Request,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     db.delete(request.state.session)
     clear_cookies(response)
     return {"message": "Signed out"}
 
 
 @router.put("/profile")
-def profile(data: Profile, user=Depends(authenticated), db=Depends(database)):
+def profile(
+    data: Profile,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     for field, value in data.model_dump().items():
         setattr(user, field, value)
     return public_user(user)
 
 
 @router.get("/sessions")
-def sessions(request: Request, user=Depends(authenticated), db=Depends(database)):
+def sessions(
+    request: Request,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     rows = db.scalars(select(AuthSession).where(AuthSession.user_id == user.id)).all()
     return [
         {
@@ -92,7 +114,11 @@ def sessions(request: Request, user=Depends(authenticated), db=Depends(database)
 
 
 @router.delete("/sessions/{session_id}")
-def revoke(session_id: str, user=Depends(authenticated), db=Depends(database)):
+def revoke(
+    session_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     db.execute(
         delete(AuthSession).where(AuthSession.id == session_id, AuthSession.user_id == user.id)
     )
@@ -100,7 +126,7 @@ def revoke(session_id: str, user=Depends(authenticated), db=Depends(database)):
 
 
 @router.post("/forgot-password", dependencies=[Depends(auth_limit)])
-def forgot(data: EmailInput, db=Depends(database)):
+def forgot(data: EmailInput, db=Depends(database, scope="function")):
     user = db.scalar(select(User).where(User.email == data.email.lower()))
     if user:
         queue_action(db, user, "reset", 1800)
@@ -129,7 +155,7 @@ def queue_action(db, user, purpose, seconds):
 
 
 @router.post("/reset-password", dependencies=[Depends(auth_limit)])
-def reset(data: Reset, response: Response, db=Depends(database)):
+def reset(data: Reset, response: Response, db=Depends(database, scope="function")):
     token = db.scalar(
         select(ActionToken)
         .where(ActionToken.token_hash == digest(data.token), ActionToken.purpose == "reset")
@@ -151,14 +177,16 @@ def reset(data: Reset, response: Response, db=Depends(database)):
 
 
 @router.post("/request-verification", dependencies=[Depends(auth_limit)])
-def request_verification(user=Depends(authenticated), db=Depends(database)):
+def request_verification(
+    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+):
     if not user.verified:
         queue_action(db, user, "verify", 86400)
     return {"message": "Verification message queued"}
 
 
 @router.post("/verify-email", dependencies=[Depends(auth_limit)])
-def verify_email(data: dict, db=Depends(database)):
+def verify_email(data: dict, db=Depends(database, scope="function")):
     raw = data.get("token", "")
     if not isinstance(raw, str) or len(raw) > 200:
         fail(400, "Invalid verification link")
@@ -181,7 +209,10 @@ def verify_email(data: dict, db=Depends(database)):
 
 @router.delete("/account")
 def delete_account(
-    data: DeleteAccount, response: Response, user=Depends(authenticated), db=Depends(database)
+    data: DeleteAccount,
+    response: Response,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
 ):
     if not passwords.verify(data.password, user.password):
         fail(401, "Incorrect password")

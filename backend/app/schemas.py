@@ -23,6 +23,7 @@ class Credentials(Input):
 
 class Register(Credentials):
     name: str = Field(min_length=1, max_length=120)
+    language: Literal["en", "hi", "ta", "kn"] = "en"
 
 
 class Profile(Input):

@@ -11,7 +11,7 @@ from .storage import storage
 router = APIRouter(prefix="/api/v1/portal", tags=["customer"])
 
 
-def capability(request: Request, db=Depends(database)):
+def capability(request: Request, db=Depends(database, scope="function")):
     throttle("portal:" + (request.client.host if request.client else "unknown"), 120)
     raw = request.headers.get("x-customer-token", "")
     if not 30 <= len(raw) <= 100:
@@ -29,7 +29,7 @@ def capability(request: Request, db=Depends(database)):
 
 
 @router.get("")
-def view(context=Depends(capability), db=Depends(database)):
+def view(context=Depends(capability, scope="function"), db=Depends(database, scope="function")):
     job, link = context
     agreement = db.get(Agreement, link.agreement_id)
     current = latest_agreement(db, job)
@@ -63,7 +63,11 @@ def view(context=Depends(capability), db=Depends(database)):
 
 
 @router.post("/decision")
-def decide(data: Decision, context=Depends(capability), db=Depends(database)):
+def decide(
+    data: Decision,
+    context=Depends(capability, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job, link = context
     agreement = latest_agreement(db, job)
     if (
@@ -92,7 +96,11 @@ def decide(data: Decision, context=Depends(capability), db=Depends(database)):
 
 
 @router.post("/comments", status_code=201)
-def comment(data: Notes, context=Depends(capability), db=Depends(database)):
+def comment(
+    data: Notes,
+    context=Depends(capability, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job, link = context
     row = event(db, job, "customer_comment", "customer", link.id, data.notes)
     db.flush()
@@ -100,7 +108,11 @@ def comment(data: Notes, context=Depends(capability), db=Depends(database)):
 
 
 @router.post("/completion")
-def completion(data: CompletionDecision, context=Depends(capability), db=Depends(database)):
+def completion(
+    data: CompletionDecision,
+    context=Depends(capability, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job, link = context
     agreement = latest_agreement(db, job)
     if (
@@ -125,7 +137,11 @@ def completion(data: CompletionDecision, context=Depends(capability), db=Depends
 
 
 @router.get("/evidence/{evidence_id}")
-def evidence(evidence_id: str, context=Depends(capability), db=Depends(database)):
+def evidence(
+    evidence_id: str,
+    context=Depends(capability, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job, link = context
     row = db.get(Evidence, evidence_id)
     if not row or row.job_id != job.id or row.deleted:

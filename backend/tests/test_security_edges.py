@@ -102,3 +102,62 @@ def test_streamed_body_size_is_bounded(worker):
         "POST", "/customers", content=chunks(), headers={"Content-Type": "application/json"}
     )
     assert response.status_code == 413
+
+
+def test_language_preference_and_financial_revision_invariants(worker, job):
+    from test_workflows import approve
+
+    profile = worker.get("/auth/me").json()
+    response = worker.request(
+        "PUT",
+        "/auth/profile",
+        json={
+            "name": profile["name"],
+            "language": "ta",
+            "phone": "+919999999999",
+            "email_notifications": True,
+        },
+    )
+    assert response.status_code == 200 and worker.get("/auth/me").json()["language"] == "ta"
+    approve(worker, job)
+    base = "/jobs/" + job["id"]
+    assert (
+        worker.post(
+            base + "/payments",
+            {
+                "amount": "1000",
+                "method": "cash",
+                "paid_at": now(),
+                "idempotency_key": "revision-payment-key",
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        worker.post(
+            base + "/agreements",
+            {
+                "scope": "Revised",
+                "labour": "100",
+                "materials": "0",
+                "other": "0",
+                "tax": "0",
+                "valid_until": now() + 86400,
+            },
+        ).status_code
+        == 422
+    )
+    history = worker.get(base).json()["timeline"]
+    assert [a["sequence"] for a in history] == sorted(a["sequence"] for a in history)
+
+
+def test_local_mail_preview_does_not_claim_delivery(worker, monkeypatch):
+    from app.mail import deliver
+    from app.models import Outbox
+
+    monkeypatch.delenv("SMTP_HOST", raising=False)
+    worker.post("/auth/forgot-password", {"email": "worker@example.com"})
+    deliver()
+    with SessionLocal() as db:
+        message = db.scalar(select(Outbox))
+        assert message.attempts == 1 and message.delivered_at is None

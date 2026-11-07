@@ -44,7 +44,9 @@ router = APIRouter(prefix="/api/v1", tags=["worker"])
 
 
 @router.get("/customers")
-def customers(user=Depends(authenticated), db=Depends(database)):
+def customers(
+    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+):
     return [
         serialize(c)
         for c in db.scalars(
@@ -56,7 +58,11 @@ def customers(user=Depends(authenticated), db=Depends(database)):
 
 
 @router.post("/customers", status_code=201)
-def create_customer(data: CustomerInput, user=Depends(authenticated), db=Depends(database)):
+def create_customer(
+    data: CustomerInput,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     customer = Customer(owner_id=user.id, **data.model_dump())
     db.add(customer)
     db.flush()
@@ -64,7 +70,9 @@ def create_customer(data: CustomerInput, user=Depends(authenticated), db=Depends
 
 
 @router.get("/dashboard")
-def dashboard(user=Depends(authenticated), db=Depends(database)):
+def dashboard(
+    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+):
     distribution = dict(
         db.execute(
             select(Job.status, func.count(Job.id))
@@ -110,8 +118,8 @@ def list_jobs(
     size: int = Query(12, ge=1, le=100),
     sort: str = "newest",
     archived: bool = False,
-    user=Depends(authenticated),
-    db=Depends(database),
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
 ):
     filters = [Job.owner_id == user.id, Job.archived == archived]
     if q:
@@ -132,7 +140,11 @@ def list_jobs(
 
 
 @router.post("/jobs", status_code=201)
-def create_job(data: JobInput, user=Depends(authenticated), db=Depends(database)):
+def create_job(
+    data: JobInput,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     customer = db.get(Customer, data.customer_id)
     if not customer or customer.owner_id != user.id:
         fail(404, "Customer not found")
@@ -144,7 +156,11 @@ def create_job(data: JobInput, user=Depends(authenticated), db=Depends(database)
 
 
 @router.get("/jobs/{job_id}")
-def detail(job_id: str, user=Depends(authenticated), db=Depends(database)):
+def detail(
+    job_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user)
     result = job_summary(db, job)
     result["customer"] = serialize(db.get(Customer, job.customer_id))
@@ -181,7 +197,12 @@ def detail(job_id: str, user=Depends(authenticated), db=Depends(database)):
 
 
 @router.put("/jobs/{job_id}")
-def edit_job(job_id: str, data: JobEdit, user=Depends(authenticated), db=Depends(database)):
+def edit_job(
+    job_id: str,
+    data: JobEdit,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     if job.status != "draft":
         fail(409, "Issued job details are preserved. Record an update or revise the agreement.")
@@ -192,7 +213,11 @@ def edit_job(job_id: str, data: JobEdit, user=Depends(authenticated), db=Depends
 
 
 @router.post("/jobs/{job_id}/archive")
-def archive(job_id: str, user=Depends(authenticated), db=Depends(database)):
+def archive(
+    job_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     job.archived = not job.archived
     event(db, job, "job_archived" if job.archived else "job_restored", actor_id=user.id)
@@ -200,7 +225,12 @@ def archive(job_id: str, user=Depends(authenticated), db=Depends(database)):
 
 
 @router.post("/jobs/{job_id}/agreements", status_code=201)
-def agreement(job_id: str, data: AgreementInput, user=Depends(authenticated), db=Depends(database)):
+def agreement(
+    job_id: str,
+    data: AgreementInput,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     if job.status not in ("draft", "awaiting_approval", "approved"):
         fail(409, "Revise agreements before work starts")
@@ -209,10 +239,13 @@ def agreement(job_id: str, data: AgreementInput, user=Depends(authenticated), db
     previous = latest_agreement(db, job)
     if previous and data.currency != previous.currency:
         fail(409, "Agreement currency cannot change")
+    total = data.labour + data.materials + data.other + data.tax
+    if total < Decimal(financials(db, job)["recorded"]):
+        fail(422, "Agreement total cannot be lower than payments already recorded")
     row = Agreement(
         job_id=job.id,
         version=previous.version + 1 if previous else 1,
-        total=data.labour + data.materials + data.other + data.tax,
+        total=total,
         **data.model_dump(),
     )
     db.add(row)
@@ -229,7 +262,12 @@ def agreement(job_id: str, data: AgreementInput, user=Depends(authenticated), db
 
 
 @router.post("/jobs/{job_id}/links", status_code=201)
-def share(job_id: str, data: LinkInput, user=Depends(authenticated), db=Depends(database)):
+def share(
+    job_id: str,
+    data: LinkInput,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     agreement = latest_agreement(db, job)
     if not agreement:
@@ -254,7 +292,12 @@ def share(job_id: str, data: LinkInput, user=Depends(authenticated), db=Depends(
 
 
 @router.delete("/jobs/{job_id}/links/{link_id}")
-def revoke_link(job_id: str, link_id: str, user=Depends(authenticated), db=Depends(database)):
+def revoke_link(
+    job_id: str,
+    link_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     link = db.get(ShareLink, link_id)
     if not link or link.job_id != job.id:
@@ -265,14 +308,23 @@ def revoke_link(job_id: str, link_id: str, user=Depends(authenticated), db=Depen
 
 
 @router.post("/jobs/{job_id}/start")
-def start(job_id: str, user=Depends(authenticated), db=Depends(database)):
+def start(
+    job_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     transition(db, job, "in_progress", actor_id=user.id)
     return job_summary(db, job)
 
 
 @router.post("/jobs/{job_id}/updates", status_code=201)
-def work_update(job_id: str, data: Notes, user=Depends(authenticated), db=Depends(database)):
+def work_update(
+    job_id: str,
+    data: Notes,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     row = event(db, job, "work_updated", actor_id=user.id, notes=data.notes)
     db.flush()
@@ -280,7 +332,12 @@ def work_update(job_id: str, data: Notes, user=Depends(authenticated), db=Depend
 
 
 @router.post("/jobs/{job_id}/completion")
-def complete(job_id: str, data: Notes, user=Depends(authenticated), db=Depends(database)):
+def complete(
+    job_id: str,
+    data: Notes,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     if job.status != "in_progress":
         fail(409, "Work must be in progress")
@@ -295,8 +352,8 @@ def upload(
     job_id: str,
     file: UploadFile = File(),
     caption: str = Form(""),
-    user=Depends(authenticated),
-    db=Depends(database),
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
 ):
     job = own_job(db, job_id, user, True)
     if len(caption) > 500:
@@ -326,7 +383,12 @@ def upload(
 
 
 @router.get("/jobs/{job_id}/evidence/{evidence_id}")
-def download(job_id: str, evidence_id: str, user=Depends(authenticated), db=Depends(database)):
+def download(
+    job_id: str,
+    evidence_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     own_job(db, job_id, user)
     row = db.get(Evidence, evidence_id)
     if not row or row.job_id != job_id or row.deleted:
@@ -340,7 +402,10 @@ def download(job_id: str, evidence_id: str, user=Depends(authenticated), db=Depe
 
 @router.delete("/jobs/{job_id}/evidence/{evidence_id}")
 def remove_evidence(
-    job_id: str, evidence_id: str, user=Depends(authenticated), db=Depends(database)
+    job_id: str,
+    evidence_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
 ):
     job = own_job(db, job_id, user, True)
     if job.status != "draft":
@@ -357,7 +422,12 @@ def remove_evidence(
 
 
 @router.post("/jobs/{job_id}/payments", status_code=201)
-def payment(job_id: str, data: PaymentInput, user=Depends(authenticated), db=Depends(database)):
+def payment(
+    job_id: str,
+    data: PaymentInput,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     job = own_job(db, job_id, user, True)
     agreement = latest_agreement(db, job)
     if not agreement or agreement.decision != "approved":
@@ -392,7 +462,9 @@ def payment(job_id: str, data: PaymentInput, user=Depends(authenticated), db=Dep
 
 
 @router.get("/notifications")
-def notifications(user=Depends(authenticated), db=Depends(database)):
+def notifications(
+    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+):
     return [
         serialize(n)
         for n in db.scalars(
@@ -405,7 +477,11 @@ def notifications(user=Depends(authenticated), db=Depends(database)):
 
 
 @router.post("/notifications/{notification_id}/read")
-def read_notification(notification_id: str, user=Depends(authenticated), db=Depends(database)):
+def read_notification(
+    notification_id: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     row = db.get(Notification, notification_id)
     if not row or row.user_id != user.id:
         fail(404, "Notification not found")
@@ -414,7 +490,12 @@ def read_notification(notification_id: str, user=Depends(authenticated), db=Depe
 
 
 @router.get("/jobs/{job_id}/documents/{kind}")
-def document(job_id: str, kind: str, user=Depends(authenticated), db=Depends(database)):
+def document(
+    job_id: str,
+    kind: str,
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
     own_job(db, job_id, user)
     if kind not in (
         "record",

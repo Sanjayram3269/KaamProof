@@ -55,7 +55,7 @@ def csrf(request, session):
         fail(403, "CSRF validation failed. Reload and try again.")
 
 
-def authenticated(request: Request, db=Depends(database)):
+def authenticated(request: Request, db=Depends(database, scope="function")):
     token = request.cookies.get("kp_session", "")
     session = db.scalar(select(AuthSession).where(AuthSession.token_hash == digest(token)))
     if not session or session.expires_at <= now():
