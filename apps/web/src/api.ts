@@ -56,7 +56,15 @@ export async function api(
       data?.error?.message || "Unable to connect. Try again.",
     );
   }
-  return response.json();
+  const data = await response.json();
+  if (
+    typeof window !== "undefined" &&
+    options.method &&
+    !["GET", "HEAD"].includes(options.method.toUpperCase()) &&
+    !path.startsWith("/auth/")
+  )
+    window.dispatchEvent(new Event("kaamproof:change"));
+  return data;
 }
 export const post = (path: string, body: unknown = {}, token?: string) =>
   api(path, { method: "POST", body: JSON.stringify(body) }, token);

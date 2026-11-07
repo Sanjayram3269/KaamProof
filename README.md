@@ -9,6 +9,19 @@ version-bound customer approvals, completion disputes, PDF records and a durable
 email outbox. It does not independently verify identity, work quality, payment
 settlement or legal validity.
 
+## Business workspace
+
+The navy, blue and amber workspace includes six linked KPIs, a job-stage pipeline,
+real attention items, financial charts with 7/30/90-day and 12-month filters,
+separate currency books, recent payment entries, searchable recent work, customer
+context and an attributed activity feed. New accounts receive a three-step setup
+path. Global job search, notification counts and payment navigation use the API.
+The shared visual system covers authentication, jobs, customer views and settings,
+with responsive navigation and English/Hindi/Tamil/Kannada controls.
+
+All figures derive from owned records. See [dashboard semantics](docs/ARCHITECTURE.md#dashboard-read-model)
+and the [redesign execution plan](docs/REDESIGN_PLAN.md).
+
 ## Start locally
 
 Install Docker Desktop with Linux containers. In PowerShell at the repository root:

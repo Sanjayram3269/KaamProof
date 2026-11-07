@@ -1,9 +1,18 @@
 import hashlib
 import secrets
 from decimal import Decimal
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from sqlalchemy import func, select
+from .dashboard import (
+    ACTIVE_STATES,
+    attention_kind,
+    build_dashboard,
+    payment_activity,
+    pending_condition,
+    read_models,
+)
 
 from .config import MAX_IMAGE_BYTES
 from .db import database
@@ -71,42 +80,24 @@ def create_customer(
 
 @router.get("/dashboard")
 def dashboard(
-    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+    days: Literal["7", "30", "90", "365"] = "90",
+    currency: str = Query("", pattern="^([A-Z]{3})?$"),
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
 ):
-    distribution = dict(
-        db.execute(
-            select(Job.status, func.count(Job.id))
-            .where(Job.owner_id == user.id, Job.archived.is_(False))
-            .group_by(Job.status)
-        ).all()
-    )
-    recent = db.scalars(
-        select(Job)
-        .where(Job.owner_id == user.id, Job.archived.is_(False))
-        .order_by(Job.created_at.desc(), Job.id)
-        .limit(5)
-    ).all()
-    activities = db.scalars(
-        select(Activity)
-        .join(Job)
-        .where(Job.owner_id == user.id)
-        .order_by(Activity.created_at.desc(), Activity.sequence.desc(), Activity.id)
-        .limit(8)
-    ).all()
-    amounts = db.execute(
-        select(Payment.currency, func.sum(Payment.amount))
-        .join(Job)
-        .where(Job.owner_id == user.id)
-        .group_by(Payment.currency)
-    ).all()
-    return {
-        "total": sum(distribution.values()),
-        "distribution": distribution,
-        "recorded_payments": {currency: str(amount) for currency, amount in amounts},
-        "recent_jobs": [job_summary(db, j) for j in recent],
-        "activities": [serialize(a) for a in activities],
-        "recent_customers": customers(user, db)[:5],
-    }
+    return build_dashboard(db, user, int(days), currency, now())
+
+
+@router.get("/payments")
+def payments(
+    days: Literal["7", "30", "90", "365"] = "90",
+    currency: str = Query("INR", pattern="^[A-Z]{3}$"),
+    page: int = Query(1, ge=1),
+    size: int = Query(12, ge=1, le=100),
+    user=Depends(authenticated, scope="function"),
+    db=Depends(database, scope="function"),
+):
+    return payment_activity(db, user.id, int(days), currency, now(), page, size)
 
 
 @router.get("/jobs")
@@ -117,21 +108,47 @@ def list_jobs(
     page: int = Query(1, ge=1),
     size: int = Query(12, ge=1, le=100),
     sort: str = "newest",
+    focus: Literal["", "active", "approvals", "outstanding", "attention", "agreement"] = "",
+    customer_id: str = "",
+    currency: str = Query("", pattern="^([A-Z]{3})?$"),
     archived: bool = False,
     user=Depends(authenticated, scope="function"),
     db=Depends(database, scope="function"),
 ):
-    filters = [Job.owner_id == user.id, Job.archived == archived]
+    filters = [Job.owner_id == user.id]
+    # Financial drilldowns include archived records, matching lifetime balances.
+    if focus != "outstanding":
+        filters.append(Job.archived == archived)
     if q:
         filters.append(Job.title.ilike(f"%{q}%", escape="\\"))
     if status:
         filters.append(Job.status == status)
     if category:
         filters.append(Job.category == category)
-    total = db.scalar(select(func.count()).select_from(Job).where(*filters))
-    rows = db.scalars(
+    if customer_id:
+        filters.append(Job.customer_id == customer_id)
+    latest, approved, paid, balance = read_models(user.id)
+    if currency:
+        filters.append(approved.c.currency == currency)
+    if focus == "agreement":
+        filters.append(Job.status.in_(("draft", "awaiting_approval", "approved")))
+    if focus == "active":
+        filters.append(Job.status.in_(ACTIVE_STATES))
+    if focus == "approvals":
+        filters.append(pending_condition(latest, now()))
+    if focus == "outstanding":
+        filters.append(balance > 0)
+    if focus == "attention":
+        filters.append(attention_kind(latest, balance, now()).is_not(None))
+    query = (
         select(Job)
-        .where(*filters)
+        .outerjoin(latest, latest.c.job_id == Job.id)
+        .outerjoin(approved, approved.c.job_id == Job.id)
+        .outerjoin(paid, paid.c.job_id == Job.id)
+    )
+    total = db.scalar(select(func.count()).select_from(query.where(*filters).subquery()))
+    rows = db.scalars(
+        query.where(*filters)
         .order_by(Job.created_at.asc() if sort == "oldest" else Job.created_at.desc(), Job.id)
         .offset((page - 1) * size)
         .limit(size)
@@ -474,6 +491,19 @@ def notifications(
             .limit(100)
         ).all()
     ]
+
+
+@router.get("/notifications/summary")
+def notification_summary(
+    user=Depends(authenticated, scope="function"), db=Depends(database, scope="function")
+):
+    return {
+        "unread": db.scalar(
+            select(func.count())
+            .select_from(Notification)
+            .where(Notification.user_id == user.id, Notification.read.is_(False))
+        )
+    }
 
 
 @router.post("/notifications/{notification_id}/read")

@@ -27,13 +27,15 @@ export function errorMessage(error: unknown) {
   return i18n.t(error instanceof TypeError ? "networkError" : "genericError");
 }
 
-export function useLoad(path: string, token?: string) {
+export function useLoad(path: string, token?: string, keepPrevious = false) {
   const [data, setData] = useState<any>(null),
     [error, setError] = useState(""),
-    [version, setVersion] = useState(0);
+    [version, setVersion] = useState(0),
+    [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
-    setData(null);
+    if (!keepPrevious) setData(null);
+    setLoading(true);
     setError("");
     api(path, {}, token)
       .then((d) => {
@@ -41,12 +43,15 @@ export function useLoad(path: string, token?: string) {
       })
       .catch((e) => {
         if (active) setError(errorMessage(e));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [path, token, version]);
-  return { data, error, reload: () => setVersion((v) => v + 1) };
+  }, [path, token, version, keepPrevious]);
+  return { data, error, loading, reload: () => setVersion((v) => v + 1) };
 }
 
 export const text = (data: FormData, key: string) =>

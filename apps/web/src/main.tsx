@@ -4,6 +4,7 @@ import { Check, X } from "lucide-react";
 import { api } from "./api";
 import i18n from "./i18n";
 import "./events";
+import "./experience-i18n";
 import { Auth, Toast } from "./state";
 import { Loading, ErrorBoundary } from "./ui";
 function App({ children }: { children: React.ReactNode }) {

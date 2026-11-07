@@ -54,12 +54,14 @@ export function Language() {
 
 export function Brand() {
   return (
-    <Link to="/" className="brand">
+    <Link to="/" className="brand" aria-label="KaamProof">
       <span className="brand-icon">
         <ClipboardCheck size={23} />
       </span>
-      kaam<span>proof</span>
-      <span className="brand-dot">.</span>
+      <span className="brand-wordmark">
+        kaam<span>proof</span>
+        <span className="brand-dot">.</span>
+      </span>
     </Link>
   );
 }
@@ -297,12 +299,22 @@ export function Heading({
   );
 }
 
-export function JobCards({ jobs }: { jobs: any[] }) {
+export function JobCards({
+  jobs,
+  agreementMode = false,
+}: {
+  jobs: any[];
+  agreementMode?: boolean;
+}) {
   const { t } = useTranslation();
   return jobs.length ? (
     <div className="job-list">
       {jobs.map((j) => (
-        <Link to={"/app/jobs/" + j.id} className="job-row" key={j.id}>
+        <Link
+          to={"/app/jobs/" + j.id + (agreementMode ? "?tab=agreement" : "")}
+          className="job-row"
+          key={j.id}
+        >
           <span className="job-icon">
             <BriefcaseBusiness size={22} />
           </span>
@@ -310,6 +322,7 @@ export function JobCards({ jobs }: { jobs: any[] }) {
             <strong>{j.title}</strong>
             <small>
               {j.customer_name} · {j.category}
+              {j.archived ? " · " + t("archived") : ""}
             </small>
           </div>
           <Badge status={j.status} />

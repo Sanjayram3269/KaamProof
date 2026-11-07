@@ -17,7 +17,7 @@ test("worker and customer complete a real documented job", async ({
     .fill("Browser-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(
-    page.getByRole("heading", { name: "A clearer picture of your work." }),
+    page.getByRole("heading", { name: "Your business, in focus." }),
   ).toBeVisible();
   const dashboardA11y = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
@@ -76,6 +76,15 @@ test("worker and customer complete a real documented job", async ({
   await expect(
     customer.getByRole("heading", { name: "Kitchen cabinet restoration" }),
   ).toBeVisible();
+  const portalA11y = await new AxeBuilder({ page: customer })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(
+    portalA11y.violations.map((v) => ({
+      id: v.id,
+      targets: v.nodes.map((n) => n.target),
+    })),
+  ).toEqual([]);
   await customer.getByRole("button", { name: "Save changes" }).click();
   await expect(
     customer.getByText("Approved", { exact: true }).first(),
@@ -136,7 +145,7 @@ test("worker and customer complete a real documented job", async ({
     .fill("Other-password-123");
   await other.getByRole("button", { name: "Create account" }).click();
   await expect(
-    other.getByRole("heading", { name: "A clearer picture of your work." }),
+    other.getByRole("heading", { name: "Your business, in focus." }),
   ).toBeVisible();
   const response = await other.request.get(
     "/api/v1/jobs/" + workerUrl.split("/").pop(),
@@ -179,7 +188,7 @@ test("mobile navigation, language, validation and missing routes", async ({
     .fill("Mobile-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(
-    page.getByRole("heading", { name: "A clearer picture of your work." }),
+    page.getByRole("heading", { name: "Your business, in focus." }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -190,13 +199,18 @@ test("mobile navigation, language, validation and missing routes", async ({
     path: "test-results/overview-mobile.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Jobs", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Open navigation", exact: true })
+    .click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("link", { name: "Help & support" }).click();
+  await page
+    .getByRole("link", { name: "Help & support", exact: true })
+    .first()
+    .click();
   await expect(
     page.getByRole("heading", { name: "Help & support" }),
   ).toBeVisible();

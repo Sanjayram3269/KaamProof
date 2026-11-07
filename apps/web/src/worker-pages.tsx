@@ -1,37 +1,13 @@
 "use client";
-import { useContext, useEffect, useState } from "react";
-import {
-  Link,
-  Navigate,
-  NavLink,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "./navigation";
+import { useContext, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Link, useNavigate, useParams } from "./navigation";
 import { useTranslation } from "react-i18next";
-import {
-  ArrowDownToLine,
-  ArrowRight,
-  Bell,
-  BriefcaseBusiness,
-  ChevronRight,
-  CircleHelp,
-  ClipboardCheck,
-  FileText,
-  LayoutDashboard,
-  Menu,
-  Plus,
-  Settings as SettingsIcon,
-  ShieldCheck,
-  Users,
-  X,
-} from "lucide-react";
+import { ArrowDownToLine, Bell, FileText, Plus } from "lucide-react";
 import { api, post } from "./api";
 import i18n, { date, money } from "./i18n";
 import { Auth, statuses, useLoad, text, object } from "./state";
 import {
-  Language,
-  Brand,
   Badge,
   Loading,
   Empty,
@@ -46,218 +22,25 @@ import {
   EvidenceImage,
 } from "./ui";
 
-export function Shell({ children }: { children: React.ReactNode }) {
-  const { user, setUser } = useContext(Auth),
-    { t } = useTranslation(),
-    navigate = useNavigate(),
-    location = useLocation();
-  const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [location.pathname]);
-  if (!user) return <Navigate to="/login" replace />;
-  const links = [
-    ["", "dashboard", LayoutDashboard],
-    ["/jobs", "jobs", BriefcaseBusiness],
-    ["/customers", "customers", Users],
-    ["/notifications", "notifications", Bell],
-    ["/settings", "settings", SettingsIcon],
-    ["/help", "help", CircleHelp],
-  ] as const;
-  return (
-    <div className="app-shell">
-      <aside className={open ? "sidebar open" : "sidebar"}>
-        <Brand />
-        <div className="workspace-label">{t("tagline")}</div>
-        <nav>
-          {links.map(([path, key, Icon]) => (
-            <NavLink end={path === ""} key={key} to={"/app" + path}>
-              <Icon size={19} />
-              {t(key)}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-proof">
-          <ShieldCheck size={25} />
-          <strong>{t("tagline")}</strong>
-          <p>{t("disclaimer")}</p>
-        </div>
-        <button className="user-chip" onClick={() => navigate("/app/profile")}>
-          <span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span>
-          <span>
-            <strong>{user.name}</strong>
-            <small>{t("profile")}</small>
-          </span>
-          <ChevronRight size={16} />
-        </button>
-      </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <button
-            className="icon-button mobile-menu"
-            aria-label={t("jobs")}
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <X /> : <Menu />}
-          </button>
-          <span className="breadcrumb">{t("tagline")}</span>
-          <div className="inline">
-            <Language />
-            <Link
-              className="icon-button"
-              to="/app/notifications"
-              aria-label={t("notifications")}
-            >
-              <Bell size={19} />
-            </Link>
-            <Action
-              label="logout"
-              secondary
-              action={async () => {
-                await post("/auth/logout");
-                setUser(null);
-                navigate("/login");
-              }}
-            />
-          </div>
-        </header>
-        <main className="content">{children}</main>
-        <footer>{t("disclaimer")}</footer>
-      </div>
-    </div>
-  );
-}
-
-export function Dashboard() {
-  const { t } = useTranslation(),
-    { user } = useContext(Auth),
-    { data, error, reload } = useLoad("/dashboard");
-  if (error) return <LoadError error={error} retry={reload} />;
-  if (!data) return <Loading />;
-  const d = data.distribution;
-  return (
-    <>
-      <div className="heading">
-        <div>
-          <p className="eyebrow">
-            {t("dashboard")} / {user.name}
-          </p>
-          <h1>{t("welcome")}</h1>
-          <p>{t("subtitle")}</p>
-        </div>
-        <Link className="button" to="/app/jobs/new">
-          <Plus size={18} />
-          {t("newJob")}
-        </Link>
-      </div>
-      <div className="stats">
-        {[
-          ["total", data.total, BriefcaseBusiness],
-          ["active", (d.in_progress || 0) + (d.approved || 0), FileText],
-          ["completed", d.completed || 0, ClipboardCheck],
-          [
-            "pending",
-            (d.awaiting_approval || 0) + (d.completion_pending || 0),
-            Users,
-          ],
-        ].map(([key, value, Icon]: any) => (
-          <div className="stat" key={key}>
-            <div>
-              <span>{t(key)}</span>
-              <Icon size={19} />
-            </div>
-            <strong>{value}</strong>
-            <span className="stat-rule" />
-          </div>
-        ))}
-      </div>
-      <div className="dashboard-grid">
-        <div>
-          <section className="panel">
-            <div className="section-head">
-              <h2>{t("recentJobs")}</h2>
-              <Link to="/app/jobs">
-                {t("viewAll")} <ArrowRight size={14} />
-              </Link>
-            </div>
-            <JobCards jobs={data.recent_jobs} />
-          </section>
-          <section className="panel">
-            <div className="section-head">
-              <h2>{t("activity")}</h2>
-            </div>
-            <Timeline items={data.activities} />
-          </section>
-        </div>
-        <div>
-          <section className="panel">
-            <div className="section-head">
-              <h2>{t("distribution")}</h2>
-            </div>
-            <div className="distribution">
-              {statuses.map((status) => (
-                <div key={status}>
-                  <div>
-                    <span>{t(status)}</span>
-                    <strong>{d[status] || 0}</strong>
-                  </div>
-                  <div className="bar">
-                    <span
-                      style={{
-                        width: `${data.total ? (100 * (d[status] || 0)) / data.total : 0}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="panel payment-panel">
-            <span className="round-icon">
-              <ArrowDownToLine size={21} />
-            </span>
-            <h2>{t("paymentSummary")}</h2>
-            {Object.entries(data.recorded_payments).length ? (
-              Object.entries(data.recorded_payments).map(
-                ([currency, amount]: any) => (
-                  <strong className="payment-total" key={currency}>
-                    {money(amount, currency)}
-                  </strong>
-                ),
-              )
-            ) : (
-              <strong className="payment-total">{money(0)}</strong>
-            )}
-            <p>{t("selfReported")}</p>
-          </section>
-          <section className="panel">
-            <div className="section-head">
-              <h2>{t("customers")}</h2>
-              <Link to="/app/customers">{t("viewAll")}</Link>
-            </div>
-            {data.recent_customers.length ? (
-              data.recent_customers.map((c: any) => (
-                <div className="customer-mini" key={c.id}>
-                  <span className="avatar">{c.name[0]}</span>
-                  <strong>{c.name}</strong>
-                </div>
-              ))
-            ) : (
-              <Empty />
-            )}
-          </section>
-        </div>
-      </div>
-    </>
-  );
-}
+export { Shell } from "./shell";
+export { Dashboard } from "./dashboard";
 
 export function Jobs() {
+  const params = useSearchParams();
   const { t } = useTranslation(),
-    [q, setQ] = useState(""),
-    [status, setStatus] = useState(""),
+    [q, setQ] = useState(params.get("q") || ""),
+    [status, setStatus] = useState(params.get("status") || ""),
     [category, setCategory] = useState(""),
     [sort, setSort] = useState("newest"),
     [archived, setArchived] = useState(false),
     [page, setPage] = useState(1);
+  const queryString = params.toString();
+  useEffect(() => {
+    const next = new URLSearchParams(queryString);
+    setQ(next.get("q") || "");
+    setStatus(next.get("status") || "");
+    setPage(1);
+  }, [queryString]);
   const { data, error, reload } = useLoad(
     "/jobs?" +
       new URLSearchParams({
@@ -267,6 +50,12 @@ export function Jobs() {
         sort,
         archived: String(archived),
         page: String(page),
+        focus:
+          params.get("intent") === "agreement"
+            ? "agreement"
+            : params.get("focus") || "",
+        customer_id: params.get("customer_id") || "",
+        currency: params.get("currency") || "",
       }),
   );
   return (
@@ -277,6 +66,21 @@ export function Jobs() {
           {t("newJob")}
         </Link>
       </Heading>
+      {params.get("intent") === "agreement" && (
+        <div className="notice">{t("xp.chooseJob")}</div>
+      )}
+      {(params.get("focus") || params.get("customer_id")) && (
+        <div className="filter-context">
+          <span>
+            {t(
+              params.get("focus") === "outstanding"
+                ? "xp.includesArchived"
+                : "xp.filtered",
+            )}
+          </span>
+          <Link to="/app/jobs">{t("xp.clearFilters")}</Link>
+        </div>
+      )}
       <section className="panel">
         <div className="filters">
           <input
@@ -320,17 +124,19 @@ export function Jobs() {
             <option value="newest">{t("newest")}</option>
             <option value="oldest">{t("oldest")}</option>
           </select>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={archived}
-              onChange={(e) => {
-                setArchived(e.target.checked);
-                setPage(1);
-              }}
-            />
-            {t("archived")}
-          </label>
+          {params.get("focus") !== "outstanding" && (
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={archived}
+                onChange={(e) => {
+                  setArchived(e.target.checked);
+                  setPage(1);
+                }}
+              />
+              {t("archived")}
+            </label>
+          )}
         </div>
         {error ? (
           <LoadError error={error} retry={reload} />
@@ -338,7 +144,10 @@ export function Jobs() {
           <Loading />
         ) : (
           <>
-            <JobCards jobs={data.items} />
+            <JobCards
+              jobs={data.items}
+              agreementMode={params.get("intent") === "agreement"}
+            />
             <div className="pagination">
               <button
                 className="secondary"
@@ -387,7 +196,7 @@ export function Customers() {
   return (
     <>
       <Heading title="customers" />
-      <section className="panel padded">
+      <section className="panel padded" id="new-customer">
         <h2>{t("addCustomer")}</h2>
         <CustomerForm done={reload} />
       </section>
@@ -581,9 +390,28 @@ export function JobDetail() {
   const { id } = useParams(),
     { t } = useTranslation(),
     { data: job, error, reload } = useLoad("/jobs/" + id);
-  const [tab, setTab] = useState("activity"),
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const validTab =
+    requestedTab &&
+    [
+      "activity",
+      "agreement",
+      "evidence",
+      "completion",
+      "payments",
+      "documents",
+      "settings",
+    ].includes(requestedTab)
+      ? requestedTab
+      : "activity";
+  const [tab, setTab] = useState(validTab),
     [link, setLink] = useState(""),
     [paymentKey, setPaymentKey] = useState(() => crypto.randomUUID());
+  useEffect(() => {
+    setTab(validTab);
+    setLink("");
+  }, [validTab, id]);
   if (error) return <LoadError error={error} retry={reload} />;
   if (!job) return <Loading />;
   const base = "/jobs/" + id;

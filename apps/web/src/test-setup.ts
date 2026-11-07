@@ -4,6 +4,7 @@ import { cleanup } from "@testing-library/react";
 afterEach(cleanup);
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
   useParams: () => ({}),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
